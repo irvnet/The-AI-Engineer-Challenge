@@ -3,17 +3,13 @@
     "builds": [
       { 
         "src": "frontend/package.json", 
-        "use": "@vercel/static-build",
-        "config": {
-          "buildCommand": "cd frontend && npm install && npm run build",
-          "outputDirectory": "frontend/dist"
-        }
+        "use": "@vercel/vite"
       }
     ],
     "routes": [
       { 
         "src": "/(.*)",
-        "dest": "frontend/dist/$1"
+        "dest": "/"
       }
     ]
   } 
