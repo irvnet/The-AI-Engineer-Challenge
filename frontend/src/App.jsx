@@ -7,6 +7,11 @@ const MODELS = [
   { label: 'gpt-4.1-nano', value: 'gpt-4.1-nano' },
 ]
 
+// Get the API URL based on the environment
+const API_URL = import.meta.env.PROD 
+  ? '/api/chat'  // In production, use relative path
+  : 'http://localhost:8000/api/chat'  // In development, use localhost
+
 function App() {
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(MODELS[0].value)
@@ -34,7 +39,7 @@ function App() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/chat",
+        API_URL,
         {
           developer_message: "You are a helpful assistant.",
           user_message: userMessage,
