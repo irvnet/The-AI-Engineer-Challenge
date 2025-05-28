@@ -8,17 +8,9 @@
         "buildCommand": "cd frontend && npm install && npm run build",
         "distDir": "frontend/dist"
       }
-    },
-    {
-      "src": "api/app.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/app.py"
-    },
     {
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
