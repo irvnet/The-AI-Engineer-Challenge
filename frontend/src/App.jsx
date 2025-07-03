@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import './App.css'
 import axios from 'axios'
 import PERSONALITIES from './personalities.js'
+import ReactMarkdown from 'react-markdown'
 
 const MODELS = [
   { label: 'gpt-4.1-mini', value: 'gpt-4.1-mini' },
@@ -160,7 +161,8 @@ function App() {
         {messages.length === 0 && <div className="chat-placeholder">No messages yet.</div>}
         {messages.map((msg, idx) => (
           <div key={idx} className={`chat-message chat-message-${msg.role}`}>
-            <span className="chat-role-label">{msg.role === 'user' ? 'You' : 'Assistant'}:</span> {msg.content}
+            <span className="chat-role-label">{msg.role === 'user' ? 'You' : 'Assistant'}:</span>{' '}
+            <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
         <div ref={messageEndRef} />
