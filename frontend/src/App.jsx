@@ -161,7 +161,7 @@ function App() {
         {messages.length === 0 && <div className="chat-placeholder">No messages yet.</div>}
         {messages.map((msg, idx) => (
           <div key={idx} className={`chat-message chat-message-${msg.role}`}>
-            <span className="chat-role-label">{msg.role === 'user' ? 'You' : 'Assistant'}:</span>{' '}
+            <span className="chat-role-label">{msg.role === 'user' ? 'You' : 'Quinton'}:</span>{' '}
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
