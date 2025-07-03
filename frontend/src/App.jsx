@@ -97,7 +97,8 @@ function App() {
   return (
     <div className="chat-container">
       <header className="chat-header">
-        <h1>OpenAI Chat Interface</h1>
+        <h1>Quinton the Query Wizard...</h1>
+        <div className="chat-subtitle">Go ahead, ask me anything!..</div>
       </header>
       <div className="chat-controls">
         <label>
@@ -132,7 +133,7 @@ function App() {
         {messages.length === 0 && <div className="chat-placeholder">No messages yet.</div>}
         {messages.map((msg, idx) => (
           <div key={idx} className={`chat-message chat-message-${msg.role}`}>
-            <strong>{msg.role === 'user' ? 'You' : 'Assistant'}:</strong> {msg.content}
+            <span className="chat-role-label">{msg.role === 'user' ? 'You' : 'Assistant'}:</span> {msg.content}
           </div>
         ))}
         <div ref={messageEndRef} />
