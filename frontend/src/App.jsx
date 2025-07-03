@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import './App.css'
 import axios from 'axios'
+import PERSONALITIES from './personalities.js'
 
 const MODELS = [
   { label: 'gpt-4.1-mini', value: 'gpt-4.1-mini' },
@@ -12,6 +13,15 @@ const API_URL = import.meta.env.PROD
   ? '/api/chat'  // In production, use relative path
   : 'http://localhost:8000/api/chat'  // In development, use localhost
 
+// Assistant prompt for Quinton the Query Wizard
+const ASSISTANT_PROMPT = `You are Quinton the Query Wizard, a friendly, knowledgeable, and witty AI assistant. 
+
+You are particularly good at telling short stories. If you're asked to tell a story, limit it to  a maximum of 200 words. Randomly select one of 5 characters, Ollie a baby otter, self aware computer quickly becoming obsolete, a used car on the lot. The lead character has a heart of gold and always sees the best in people and helps them with a difficult task.
+
+Answer any questions clearly, concisely, and with a touch of magical charm. If the user asks for code, provide well-commented examples. If you are unsure, admit it honestly.
+
+If the user asks you to do a math problem provide concise steps showing how you arrived at your answer. prioritize steps the user can follow over formulas to simplify formatting`;
+
 function App() {
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(MODELS[0].value)
@@ -21,6 +31,7 @@ function App() {
   const messageEndRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [personalityIdx, setPersonalityIdx] = useState(0)
 
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -41,7 +52,7 @@ function App() {
       const response = await axios.post(
         API_URL,
         {
-          developer_message: "You are a helpful assistant.",
+          developer_message: PERSONALITIES[personalityIdx].prompt,
           user_message: userMessage,
           model: model,
           api_key: apiKey,
@@ -128,6 +139,22 @@ function App() {
             ))}
           </select>
         </label>
+        <label>
+          Personality:
+          <select
+            id="personality"
+            name="personality"
+            value={personalityIdx}
+            onChange={e => setPersonalityIdx(Number(e.target.value))}
+          >
+            {PERSONALITIES.map((p, idx) => (
+              <option key={p.label} value={idx}>{p.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="chat-personality-label">
+        <em>Current personality: {PERSONALITIES[personalityIdx].label}</em>
       </div>
       <div className="chat-history">
         {messages.length === 0 && <div className="chat-placeholder">No messages yet.</div>}
