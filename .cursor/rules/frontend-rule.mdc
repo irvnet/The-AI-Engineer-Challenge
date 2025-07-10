@@ -11,3 +11,33 @@ alwaysApply: false
 - You should use Next.js as it works best with Vercel. 
 - This frontend will ultimately be deployed on Vercel, but it should be possible to test locally. 
 - Always provide users with a way to run the created UI once you have created it.
+
+### Design & Theming
+
+#### Color Scheme
+- **Primary**: #4F46E5 (indigo-600) - Main actions, buttons, links
+- **Secondary**: #10B981 (emerald-500) - Success states, confirmations
+- **Accent**: #F59E0B (amber-500) - Highlights, warnings, important elements
+- **Background**: #F8FAFC (slate-50) - Main background
+- **Surface**: #FFFFFF (white) - Cards, panels, elevated elements
+- **Text Primary**: #1E293B (slate-800) - Main text content
+- **Text Secondary**: #64748B (slate-500) - Subtle text, labels
+- **Border**: #E2E8F0 (slate-200) - Subtle borders and dividers
+
+#### Design Principles
+- **Modern & Clean**: Minimalist design with plenty of whitespace
+- **Consistent Spacing**: Use consistent padding and margins (8px, 16px, 24px, 32px)
+- **Smooth Transitions**: Subtle animations for hover states and interactions
+- **Mobile-First**: Responsive design that works on all screen sizes
+- **Accessibility**: High contrast ratios, clear focus states, readable typography
+
+#### Typography
+- **Primary Font**: System fonts (Inter, -apple-system, BlinkMacSystemFont, sans-serif)
+- **Code Font**: Monospace for code blocks and technical content
+- **Font Sizes**: 14px base, 16px for body text, 18px+ for headings
+
+#### Component Guidelines
+- **Buttons**: Rounded corners (6px), hover effects, clear hierarchy
+- **Cards**: Subtle shadows, rounded corners (8px), clean borders
+- **Forms**: Clear labels, helpful error messages, logical tab order
+- **Chat Interface**: Clear message bubbles, distinct user/assistant styling
