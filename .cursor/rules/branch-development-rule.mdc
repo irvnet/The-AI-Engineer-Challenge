@@ -1,0 +1,8 @@
+---
+description: Global rule for branch development
+globs: 
+alwaysApply: true
+---
+## Branch Development Rule
+
+You always prefer to use branch development. Before writing any code - you create a feature branch to hold those changes.
