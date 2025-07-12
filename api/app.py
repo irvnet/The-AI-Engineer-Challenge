@@ -1,11 +1,11 @@
 # Import required FastAPI components for building the API
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 # Import Pydantic for data validation and settings management
 from pydantic import BaseModel
 # Import OpenAI client for interacting with OpenAI's API
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 import os
 import tempfile
 import uuid
@@ -20,9 +20,8 @@ from aimakerspace.openai_utils.embedding import EmbeddingModel
 # Initialize FastAPI application with a title
 app = FastAPI(title="OpenAI Chat API")
 
-# Global storage for RAG sessions
+# Global storage for RAG sessions (Note: In serverless environments, this won't persist between requests)
 rag_sessions: Dict[str, VectorDatabase] = {}
-embedding_model = None  # Will be initialized when needed
 
 # Configure CORS (Cross-Origin Resource Sharing) middleware
 # This allows the API to be accessed from different domains/origins
@@ -158,7 +157,7 @@ async def debug_env():
 
 # Define PDF upload endpoint for RAG
 @app.post("/api/upload-pdf")
-async def upload_pdf(file: UploadFile = File(...), api_key: str = None):
+async def upload_pdf(file: UploadFile = File(...), api_key: str = Form(None)):
     try:
         # Validate file type
         if not file.filename.lower().endswith('.pdf'):
@@ -181,13 +180,16 @@ async def upload_pdf(file: UploadFile = File(...), api_key: str = None):
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = text_splitter.split_texts(documents)
         
-        # Initialize embedding model if not already done
-        global embedding_model
-        if embedding_model is None:
-            # Set the API key in environment for EmbeddingModel
-            if api_key:
-                os.environ["OPENAI_API_KEY"] = api_key
-            embedding_model = EmbeddingModel()
+        # Initialize embedding model with API key
+        if not api_key:
+            raise HTTPException(status_code=400, detail="API key is required")
+        
+        # Create embedding model with the provided API key
+        embedding_model = EmbeddingModel()
+        # Override the API key for this instance
+        embedding_model.openai_api_key = api_key
+        embedding_model.async_client = AsyncOpenAI(api_key=api_key)
+        embedding_model.client = OpenAI(api_key=api_key)
         
         # Create vector database and index chunks
         vector_db = VectorDatabase(embedding_model)
