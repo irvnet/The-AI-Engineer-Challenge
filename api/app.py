@@ -131,12 +131,30 @@ async def rag_chat(request: RAGChatRequest):
         return StreamingResponse(generate(), media_type="text/plain")
         
     except Exception as e:
+        import traceback
+        error_details = {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "api_key_available": os.getenv("OPENAI_API_KEY") is not None
+        }
+        print(f"PDF upload error: {error_details}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Define a health check endpoint to verify API status
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
+
+# Debug endpoint to check environment variables
+@app.get("/api/debug-env")
+async def debug_env():
+    api_key = os.getenv("OPENAI_API_KEY")
+    return {
+        "api_key_set": api_key is not None,
+        "api_key_length": len(api_key) if api_key else 0,
+        "api_key_preview": f"{api_key[:10]}..." if api_key else None,
+        "all_env_vars": {k: v for k, v in os.environ.items() if "OPENAI" in k}
+    }
 
 # Define PDF upload endpoint for RAG
 @app.post("/api/upload-pdf")
@@ -149,8 +167,8 @@ async def upload_pdf(file: UploadFile = File(...), api_key: str = None):
         # Create a unique session ID
         session_id = str(uuid.uuid4())
         
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+        # Save uploaded file temporarily (use /tmp for Vercel compatibility)
+        with tempfile.NamedTemporaryFile(dir='/tmp', delete=False, suffix='.pdf') as temp_file:
             content = await file.read()
             temp_file.write(content)
             temp_file_path = temp_file.name
