@@ -7,10 +7,15 @@ const MODELS = [
   { label: 'gpt-4.1-nano', value: 'gpt-4.1-nano' },
 ]
 
-// Get the API URL based on the environment
 const API_URL = import.meta.env.PROD 
-  ? '/api/chat'  // In production, use relative path
-  : 'http://localhost:8000/api/chat'  // In development, use localhost
+  ? '/api/chat'
+  : 'http://localhost:8000/api/chat'
+const RAG_UPLOAD_URL = import.meta.env.PROD
+  ? '/api/upload-pdf'
+  : 'http://localhost:8000/api/upload-pdf'
+const RAG_CHAT_URL = import.meta.env.PROD
+  ? '/api/rag-chat'
+  : 'http://localhost:8000/api/rag-chat'
 
 function App() {
   const [apiKey, setApiKey] = useState('')
@@ -22,77 +27,139 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // RAG state
+  const [pdfFile, setPdfFile] = useState(null)
+  const [ragSessionId, setRagSessionId] = useState('')
+  const [uploadStatus, setUploadStatus] = useState('idle') // idle | uploading | success | error
+  const [uploadMessage, setUploadMessage] = useState('')
+
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Dummy send handler (no backend integration yet)
+  // PDF upload handler
+  const handlePdfChange = (e) => {
+    setPdfFile(e.target.files[0])
+    setUploadStatus('idle')
+    setUploadMessage('')
+    setRagSessionId('')
+    setMessages([])
+  }
+
+  const handlePdfUpload = async () => {
+    if (!pdfFile) return
+    setUploadStatus('uploading')
+    setUploadMessage('')
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', pdfFile)
+      formData.append('api_key', apiKey)
+      const response = await axios.post(RAG_UPLOAD_URL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setRagSessionId(response.data.session_id)
+      setUploadStatus('success')
+      setUploadMessage(response.data.message)
+    } catch (err) {
+      setUploadStatus('error')
+      setUploadMessage('')
+      setError(err.response?.data?.detail || 'Failed to upload PDF')
+    }
+  }
+
+  // RAG chat handler
+  const handleRagSend = async () => {
+    if (!userMessage.trim() || !apiKey || !ragSessionId) return
+    const newMessage = { role: 'user', content: userMessage }
+    setMessages((prev) => [...prev, newMessage])
+    setUserMessage('')
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.post(
+        RAG_CHAT_URL,
+        {
+          session_id: ragSessionId,
+          user_message: newMessage.content,
+          model: model,
+          api_key: apiKey,
+        },
+        {
+          responseType: 'blob',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+      const reader = new Response(response.data).body.getReader()
+      let assistantMessage = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        assistantMessage += new TextDecoder().decode(value)
+        setMessages((prev) => {
+          const newMessages = [...prev]
+          const lastMessage = newMessages[newMessages.length - 1]
+          if (lastMessage.role === 'assistant') {
+            lastMessage.content = assistantMessage
+          } else {
+            newMessages.push({ role: 'assistant', content: assistantMessage })
+          }
+          return newMessages
+        })
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to chat with PDF')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Existing non-RAG chat handler (for when no PDF is uploaded)
   const handleSend = async () => {
-    if (!userMessage.trim() || !apiKey) return;
-
-    const newMessage = { role: "user", content: userMessage };
-    setMessages((prev) => [...prev, newMessage]);
-    setUserMessage("");
-    setIsLoading(true);
-    setError('');
-
+    if (!userMessage.trim() || !apiKey) return
+    const newMessage = { role: 'user', content: userMessage }
+    setMessages((prev) => [...prev, newMessage])
+    setUserMessage('')
+    setIsLoading(true)
+    setError('')
     try {
       const response = await axios.post(
         API_URL,
         {
-          developer_message: "You are a helpful assistant.",
+          developer_message: 'You are a helpful assistant.',
           user_message: userMessage,
           model: model,
           api_key: apiKey,
         },
         {
-          responseType: "blob",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          responseType: 'blob',
+          headers: { 'Content-Type': 'application/json' },
         }
-      );
-
-      const reader = new Response(response.data).body.getReader();
-      let assistantMessage = "";
-
+      )
+      const reader = new Response(response.data).body.getReader()
+      let assistantMessage = ''
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        assistantMessage += new TextDecoder().decode(value);
+        const { done, value } = await reader.read()
+        if (done) break
+        assistantMessage += new TextDecoder().decode(value)
         setMessages((prev) => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.role === "assistant") {
-            lastMessage.content = assistantMessage;
+          const newMessages = [...prev]
+          const lastMessage = newMessages[newMessages.length - 1]
+          if (lastMessage.role === 'assistant') {
+            lastMessage.content = assistantMessage
           } else {
-            newMessages.push({ role: "assistant", content: assistantMessage });
+            newMessages.push({ role: 'assistant', content: assistantMessage })
           }
-          return newMessages;
-        });
+          return newMessages
+        })
       }
     } catch (error) {
-      console.error("Error sending message:", error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        setError(`Error: ${error.response.status} - ${error.response.data}`);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error("Request error:", error.request);
-        setError("No response received from the server. Please check your connection.");
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error("Error message:", error.message);
-        setError(`Error: ${error.message}`);
-      }
+      setError(error.response?.data || error.message)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="chat-container">
@@ -128,6 +195,23 @@ function App() {
           </select>
         </label>
       </div>
+      {/* PDF Upload Section */}
+      <div className="pdf-upload-section">
+        <h2>Upload a PDF to Chat (RAG Mode)</h2>
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={handlePdfChange}
+          disabled={uploadStatus === 'uploading'}
+        />
+        <button onClick={handlePdfUpload} disabled={!pdfFile || uploadStatus === 'uploading'}>
+          {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload PDF'}
+        </button>
+        {uploadStatus === 'success' && <div className="success-message">{uploadMessage}</div>}
+        {uploadStatus === 'error' && <div className="error-message">{error}</div>}
+        {ragSessionId && <div className="info-message">RAG Mode enabled for this session.</div>}
+      </div>
+      {/* Chat History */}
       <div className="chat-history">
         {messages.length === 0 && <div className="chat-placeholder">No messages yet.</div>}
         {messages.map((msg, idx) => (
@@ -137,6 +221,7 @@ function App() {
         ))}
         <div ref={messageEndRef} />
       </div>
+      {/* Chat Input Row */}
       <div className="chat-input-row">
         <input
           id="userMessage"
@@ -145,11 +230,17 @@ function App() {
           type="text"
           value={userMessage}
           onChange={(e) => setUserMessage(e.target.value)}
-          placeholder="Type your message..."
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSend() }}
+          placeholder={ragSessionId ? 'Ask a question about your PDF...' : 'Type your message...'}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') ragSessionId ? handleRagSend() : handleSend()
+          }}
           disabled={isLoading}
         />
-        <button className="chat-send-btn" onClick={handleSend} disabled={!userMessage.trim() || isLoading}>
+        <button
+          className="chat-send-btn"
+          onClick={ragSessionId ? handleRagSend : handleSend}
+          disabled={!userMessage.trim() || isLoading}
+        >
           Send
         </button>
       </div>

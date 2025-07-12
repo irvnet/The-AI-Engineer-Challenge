@@ -13,4 +13,5 @@ dependencies = [
     "pypdf2>=3.0.1",
     "python-dotenv>=1.0.0",
     "numpy>=1.24.0",
+    "python-multipart>=0.0.20",
 ]
